@@ -2,30 +2,57 @@
 
 # jeremy.donson@centricdigital.com
 
-# bash script turns ascii file into table, where one line => one row
+# bash script turns ascii file into mysql table, where one line => one database table row
 
-# process db_setup file if db not present; then process data file
+# stages of execution: 
+# data file exists, settings, db setups, file metadata, file load, audit, explode on delim, ??
 
-ROW_COUNT=`cat $1 | wc -l`
-MAX_CHAR_WIDTH=`cat $1 | wc -L`
-MAX_WIDTH_ROW=
+# includes = functions, data, settings
+
+if ![[ -r "$1" && -f "$1" ]]; then
+    OUTPUT_MESSAGE="Data file named ${1} !(exists + readable).\nTry \$ chmod 700 ${1}"; 
+    echo ${OUTPUT_MESSAGE}; exit;
+fi
+
+DATA_FILE_NAME="${1}" # named only after access confirmed
+
+SCHEMA_NAME=`echo "$FILE" | cut -d'.' -f1` # file name => table name
+
+DATE_STRING=`date "+%Y%m%d"`
+TIME_STRING=`date "+%H%M%S"`
+TSTAMP_STRING=`date "+%Y%m%d%H%M%S"`
+MICROTIME=
+ROW_COUNT=`cat ${1} | wc -l`
+MAX_CHAR_WIDTH=`cat ${1} | wc -L`
+MAX_WIDTH_ROW=MAX_CHAR_WIDTH
 CHAR_SET="UTF8"
-DELIM=","
+HORIZONTAL_DELIM="\n"
+VERTICAL_DELIM=","
 
-# DB_STMNT="mysql -ABN -udbroot -e '${DB_CALL}'"
+# DB_CALLS[]  # DB_STMNT="mysql -ABN -udbroot -e '${DB_CALL}'"
 
-mysql -ABN -udbroot -e 'CREATE SCHEMA ascii2mysql \
-/*!40100 DEFAULT CHARACTER SET UTF8 */'
+DB_VERSION_CALL="SELECT VERSION()"
 
-mysql -ABN -udbroot -e "CREATE TABLE ascii2mysql.${1}( \
-line_num unsigned int not null auto_increment primary key, \
-line varchar(${MAX_CHAR_WIDTH}) NOT NULL DEFAULT 0) \
+DB_SCHEMA_CALL="CREATE SCHEMA ${SCHEMA_NAME} \
+/*!40100 DEFAULT CHARACTER SET UTF8 */; USE ${SCHEMA_NAME}"
+
+mysql -ABN -udbroot -e "CREATE TABLE ${SCHEMA_NAME}.${}( \
+line_num      unsigned int not null auto_increment primary key, \
+ascii_line    varchar(${MAX_CHAR_WIDTH}) NOT NULL DEFAULT 0) \
 ENGINE = InnoDB"
+
+LOAD DATA LOCAL INFILE "${DATA_FILE_NAME}"
+INTO TABLE test.hum_assess_comp_keyed
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(page_name, view_date, cookie_id, session_id, session_start_date,view_date_f,sstart_date_f);
+
 
 while read -r line
 do
     name=$line
-	mysql -ABN -udbroot -e "INSERT INTO ${1} VALUES (NULL, $line)"
+	mysql -ABN -udbroot -e "INSERT INTO temp_${DATE_STRING} VALUES (NULL, $line)"
 #    echo "Text read from file - $name"
 done < $1
 
