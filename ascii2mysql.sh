@@ -63,6 +63,9 @@ done < $1
 # performance
 
 /*
+
+http://stackoverflow.com/questions/5928599/equivalent-of-explode-to-work-with-strings-in-mysql
+
 --  PAGE_NAME,VIEW_DATE,COOKIE_ID,SESSION_ID,SESSION_START_DATE
 
 use csv_schema;
@@ -111,4 +114,4 @@ truncate table hum_assess_comp_keyed;
 
 alter table hum_assess_comp_keyed auto_increment = 0;
 
-
+*/
